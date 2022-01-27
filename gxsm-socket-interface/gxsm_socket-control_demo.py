@@ -219,7 +219,7 @@ class AppWindow(Gtk.ApplicationWindow):
 
         self.fig = Figure(figsize=(6, 6), dpi=100)
         self.axy = self.fig.add_subplot(111)
-        self.axline = self.fig.add_subplot(111)
+        #self.axline = self.fig.add_subplot(111)
         self.canvas = FigureCanvas(self.fig)  # a Gtk.DrawingArea
         self.canvas.set_size_request(600, 600)
         self.grid.attach(self.canvas, 3,1, 100,100)
@@ -337,6 +337,10 @@ class AppWindow(Gtk.ApplicationWindow):
             print('Current (old name) = ', self.rootgrp['sranger_mk2_hwi_mix0_current_set_point'][0], self.rootgrp['sranger_mk2_hwi_mix0_current_set_point'].var_unit)
             self.cur = self.rootgrp['sranger_mk2_hwi_mix0_current_set_point'][0]
             self.current.set_text ('{0:.4f} '.format(self.rootgrp['sranger_mk2_hwi_mix0_current_set_point'][0])+self.rootgrp['sranger_mk2_hwi_mix0_current_set_point'].var_unit)
+        elif 'sranger_mk2_hwi_mix0_set_point' in self.rootgrp.variables:
+            print('Current = ', self.rootgrp['sranger_mk2_hwi_mix0_set_point'][0], self.rootgrp['sranger_mk2_hwi_mix0_set_point'].var_unit)
+            self.cur = self.rootgrp['sranger_mk2_hwi_mix0_set_point'][0]
+            self.current.set_text ('{0:.4f} '.format(self.rootgrp['sranger_mk2_hwi_mix0_set_point'][0])+self.rootgrp['sranger_mk2_hwi_mix0_set_point'].var_unit)
         else:
             self.current.set_text ('??')
 
@@ -382,8 +386,9 @@ class AppWindow(Gtk.ApplicationWindow):
         self.cbar = self.fig.colorbar(self.im, extend='both', shrink=0.9, ax=self.axy)
         self.cbar.set_label('Z in '+gxsm_units[self.rootgrp['dz'].unit][0])
         self.fig.canvas.draw()
-        print ('NCLoad tags from group {}'.format (self.tact_label_group))
-        self.load_tags_from_netcdf (self.tact_label_group)
+
+        #print ('NCLoad tags from group {}'.format (self.tact_label_group))
+        #self.load_tags_from_netcdf (self.tact_label_group)
 
 
 
@@ -533,12 +538,12 @@ class Application(Gtk.Application):
     
     def on_about(self, action, param):
         about_dialog = Gtk.AboutDialog(transient_for=self.window, modal=True,
-                                       program_name="gxsm-scan-image-viewer.py: Gxsm3 Remote AI Client Tag Tool",
+                                       program_name="gxsm-scan-image-viewer.py: Gxsm Socket Remote Client Demo",
                                        authors=["Percy Zahl"],
                                        #documenters = ["--"],
                                        copyright="GPL",
                                        website="http://www.gxsm.sf.net",
-                                       logo=GdkPixbuf.Pixbuf.new_from_file_at_scale("./gxsm3-icon.svg", 200,200, True),
+                                       logo=GdkPixbuf.Pixbuf.new_from_file_at_scale("./gxsm-icon.svg", 200,200, True),
                                        )
         about_dialog.set_copyright(
             "Copyright \xc2\xa9 2019 Percy Zahl.\n"
