@@ -186,6 +186,8 @@ for i in range(len(molecule_coord)):
 #Some overlap with Finding molecules write another if statement if molecules are overlapping
 #Add function to get rid of nearest neighbors.
 #Make sure tip stays on molecule. Not sure if it. Simulator moving a little fast. 
+#The boxes have to be away from the edges!!! Or else they behave poorly. and give a weird rectangle shape. 
+#Also if the initial file has an offset the next scan is going to be in the wrong place 
 
 
 
