@@ -584,15 +584,17 @@ for mi in range(0,50):  ##len(molecule_coord)):
 		sc['Tip_Z_Ref'] = z
 		SetSC()
 		tipz =0
+		
 		while int(gxsm.get('script-control')) >1 and tipz <= sc['Z_down'] and tipz < 2.0:
 			AFM = do_HR_AFM(mi, tipz)
+			sc['Z_down'] = 0.3
 			if do_AI_afm:
 				if AFM in ['okay']:
-					sc['Z_down'] = 0.0
+					continue
 				elif AFM in ['far']:
-					sc['Z_down'] = 0.3
+					sc['Z_down'] = 0.4
 				else:
-					sc['Z_down'] = -0.3
+					tipz = tipz - 0.4
 			
 			time.sleep(4)
 
@@ -608,7 +610,7 @@ for mi in range(0,50):  ##len(molecule_coord)):
 				r = gxsm.marker_getobject_action(map_ch, 'RectangleM{:02d}'.format(mi),'SET-LABEL-TO:'+filenumber)
 				print(r)
 				
-			tipz = tipz+0.3			
+			tipz = tipz+0.4			
 
 		if int(gxsm.get('script-control')) >5:
 				print('waiting for re run as long as sc>5')
