@@ -6,7 +6,8 @@
 
 ### MODES
 
-TEST_AI=False
+TEST_AI=False # Test Mode
+
 do_auto_locate = False
 do_stm = True
 do_afm = True
@@ -24,7 +25,7 @@ afm_ch=2  # HR_AFM IMAGE (0...N)
 ### DEFAULTS
 # Up to 8 ScriptControls (sc)
 # Level, I in pA
-sc = dict(STM_Range=45, AFM_Range=45,  Molecule=1,  I_ref=20, CZ_Level=130.0,  Z_down=1.5, Z_start=0.0, Tip_Z=0.0,  Tip_Z_Ref=0.0, AutoAFMSpeed=1)
+sc = dict(STM_Range=45, AFM_Range=45,  Molecule=1,  I_ref=20, CZ_Level=100.0,  Z_down=1.3, Z_start=0.0, Tip_Z=0.0,  Tip_Z_Ref=0.0, AutoAFMSpeed=1)
 
 STM_ref_bias = 0.6 # 0.1
 STM_scan_current = 0.0025 # 0.01
@@ -111,7 +112,8 @@ logging.info('Auto-AFM-AI logfile start. [{}]'.format(logfile_name))
 
 DatasetCatalog.clear()
 
-#Resgister the data. Where is it located locally?
+#Register the data. Where is it located locally?
+# download, and extract, adjust path below accordingly:  https://bnlbox.sdcc.bnl.gov/index.php/s/9xoFrTsPWmcB9Gp
 AI_base_dir = '/home/percy/AI-data'
 register_coco_instances("3class_train", {}, AI_base_dir+'/labels_clasestres_2022-07-26-01-21-07.json', AI_base_dir+'/files')
 
@@ -168,8 +170,8 @@ def export_drawing(ch=0, postfix='-dwg'):
 	name, ext = os.path.splitext(ncfname)
 	dest_name = folder+'/'+name+postfix
 	print('Exporting: ', dest_name)
-	#gxsm.chmodea(ch)
-	#gxsm.autodisplay()
+	gxsm.chmodea(ch)
+	gxsm.autodisplay()
 	time.sleep(1)
 	gxsm.save_drawing(ch, 0,0, dest_name+'.png')
 	gxsm.save_drawing(ch, 0,0, dest_name+'.pdf')
@@ -182,8 +184,8 @@ def export_png(ch=0, postfix='autoexport'):
 	name, ext = os.path.splitext(ncfname)
 	dest_name = folder+'/'+name+postfix
 	print('Exporting: ', dest_name)
-	#gxsm.chmodea(ch)
-	#gxsm.autodisplay()
+	gxsm.chmodea(ch)
+	gxsm.autodisplay()
 	time.sleep(1)
 	gxsm.save_drawing(ch, 0,0, dest_name+'.png')
 
@@ -373,7 +375,8 @@ def ai_decide(ch):
 	mask_array_instance = []
 	height = im_bgr.shape[0]
 	width = im_bgr.shape[1]
-	img_mask = np.zeros([height, width, 3], np.uint8)
+	img_mask = 255*np.ones([height, width, 3], np.uint8) # zeros
+	
 	for i in range(num_instances):
 		if labels[i]==0:
 #			color = (250, 43, 138) #Purple Color for close and distortion regions
@@ -422,7 +425,7 @@ def ai_mask_to_gxsm_ch (ai_mask_img, chm):
 	n = np.ravel(rgb) # make 1-d
 	mem2d = array.array('f', n.astype(float)) 
 	mem2d=np.resize(mem2d, 4*img_shape[0]*img_shape[1])
-	#gxsm.chmodea (chm)
+	gxsm.chmodea (chm)
 	gxsm.createscanf (chm, img_shape[1], img_shape[0], 4, 45, 45, mem2d, False)
 
 	full_original_name = gxsm.chfname(afm_ch).split()[0]
@@ -491,7 +494,6 @@ def do_stm_and_lock_on_center(mi):
 	print('CM:' ,cx,cy)
 	time.sleep(1)
 	print('Adjust Offset')
-	gxsm.chmodea (0)
 	r=gxsm.marker_getobject_action(0, 'PointCM','SET-OFFSET')
 	print(r)
 	time.sleep(2)
@@ -542,10 +544,11 @@ def do_HR_AFM(mi, tipz):
 
 max_mol = 50
 
-if TEST_AI:
-	afm_ch=2
+
+if  TEST_AI:
+	afm_ch=0
+	mask_ch=9
 	ct = datetime.datetime.now()
-	print (' ** TEST AI ** REGION MAKS FROM CH  ', afm_ch)
 	print (ct, ' ** Test AI on ch', afm_ch)
 	result, ai_mask_img = ai_decide(afm_ch)
 	print (ct, ' ** ')
@@ -555,10 +558,22 @@ if TEST_AI:
 	img_shape= ai_mask_img.shape
 	print (img_shape)
 	#rgb = ai_mask_img
+	
+	afmimg = get_gxsm_img(afm_ch) # Load image from AFM channel
+	print ('AFM img')
+	print(afmimg.shape)
+	afm_norm_img = cv2.normalize(afmimg, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U) # Normalize the color scale of the image from 0 to 255
+	afm_rgb_img = gray2rgb(afm_norm_img) # Turn Grayscale to RGB
+	print(afm_rgb_img.shape)
+	
+	rgb = afm_rgb_img * (0.5*0.5*ai_mask_img/255)
+	ai_mask_img = rgb
+  
 	rgb = np.moveaxis(ai_mask_img, 0, -1)
 	rgb = np.moveaxis(rgb, 0, -1)
 	print(rgb.shape)
-
+  
+        
 	n = np.ravel(rgb) # make 1-d
 	mem2d = array.array('f', n.astype(float)) 
 	mem2d=np.resize(mem2d, 4*img_shape[0]*img_shape[1])
@@ -569,8 +584,8 @@ if TEST_AI:
 	#mem2d_afm = array.array('f', afmn.astype(float))
 	#mem2d = np.concatenate ((mem2d_afm, mem2d))
 
-	gxsm.chmodea (8)
-	gxsm.createscanf (8,img_shape[1],img_shape[0],4, 45, 45, mem2d, False)
+	gxsm.chmodea (mask_ch)
+	gxsm.createscanf (mask_ch,img_shape[1],img_shape[0],4, 45, 45, mem2d, False)
 	#gxsm.add_layerinformation ("@ "+str(flv)+" Hz",10)
 	#gxsm.createscanf : Create Scan float: gxsm.createscan (ch,nx,ny,nv pixels, rx,ry in A, array.array('f', [...]), append)
 	
@@ -579,11 +594,14 @@ if TEST_AI:
 
 ################################################################## 
 
-if max_mol > 0:
-	print('Map in CH', map_ch+1)
-	print('Removing all Rectangles!')
-	r=gxsm.marker_getobject_action(map_ch, 'Rectangle','REMOVE-ALL')
-	print(r)
+print('Map in CH', map_ch+1)
+
+print('Removing all Rectangles!')
+r=gxsm.marker_getobject_action(map_ch, 'Rectangle','REMOVE-ALL')
+print(r)
+
+
+
 
 if do_auto_locate:
 	##### Locate Molecules using OpenCV Some functions might be extra could be use for later...###
@@ -622,33 +640,34 @@ if do_auto_locate:
 		while int(gxsm.get('script-control')) > 1:
 			time.sleep(0.5)
 
+print('List Objects, Mark Mol, Setup Rects')
+k=0
+for i in range(0, max_mol): ##len(pro_molecule_coord)):
+	o=gxsm.get_object (map_ch, i+k) ## adjust for inserted object -- always pre pended to list!
+	print('O', i, ' => ', o)
+	if o == 'None':
+		break
+	print('Marking M', i)
+	r=gxsm.add_marker_object(map_ch, 'RectangleM{:02d}'.format(i), 0xff00fff0, round(o[1]),round(o[2]), sc['AFM_Range']/map_diffs[0])
+	k=k+1 # we have not one more object prepended to the object list!
+	print(r)
+
+SetSC()
+time.sleep(1)
+
 if max_mol > 0:
-	print('List Objects, Mark Mol, Setup Rects')
-	k=0
-	for i in range(0, max_mol): ##len(pro_molecule_coord)):
-		o=gxsm.get_object (map_ch, i+k) ## adjust for inserted object -- always pre pended to list!
-		print('O', i, ' => ', o)
-		if o == 'None':
-			break
-		print('Marking M', i)
-		r=gxsm.add_marker_object(map_ch, 'RectangleM{:02d}'.format(i), 0xff00fff0, round(o[1]),round(o[2]), sc['AFM_Range']/map_diffs[0])
-		k=k+1 # we have not one more object prepended to the object list!
-		print(r)
-
-	SetSC()
-	time.sleep(1)
-
 	gxsm.set('script-control','2')
 	print('waiting as long as sc>1 -- check configurations now')
 	while int(gxsm.get('script-control')) > 1:
 		time.sleep(0.5)
 
-	GetSC()
+GetSC()
 
-	# make sure STM safe mode
-	exit_force_map(0.1, current=0.006)
+# make sure STM safe mode
+exit_force_map(0.1, current=0.006)
 
-	gxsm.set('script-control','3')
+
+gxsm.set('script-control','3')
 
 for mi in range(0,max_mol):  ##len(molecule_coord)):
 	full_path_name = gxsm.chfname(0).split()[0]
@@ -724,10 +743,6 @@ for mi in range(0,max_mol):  ##len(molecule_coord)):
 		z_ai_dir=0
 		z_ai_step=0.3
 		while int(gxsm.get('script-control')) >1 and tipz <= sc['Z_down'] and tipz < 2.0:
-			if int(gxsm.get('script-control')) >5:
-					print('waiting for re run as long as sc>5')
-					while int(gxsm.get('script-control')) > 5:
-						time.sleep(0.5)
 			logging.info('Starting AFM image')
 			do_HR_AFM(mi, tipz)
 			time.sleep(4)
